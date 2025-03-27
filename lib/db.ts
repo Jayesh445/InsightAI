@@ -1,8 +1,8 @@
 import { connectDB } from "./mongodb";
 import User from "@/models/user";
-import Chat from "@/models/chat";
 import Reservation  from "@/models/reservation";
 import { genSaltSync, hashSync } from "bcrypt-ts";
+import ChatModel, { ChatDocument } from '../models/chat';
 
 // ✅ Get User by Email
 export async function getUser(email: string) {
@@ -19,34 +19,44 @@ export async function createUser(email: string, password: string) {
     return new User({ email, password: hash }).save();
 }
 
-// ✅ Save Chat
-export async function saveChat({ id, messages, userId }: { id: string; messages: any; userId: string }) {
-    await connectDB();
+/**
+ * Save a new chat message to the database.
+ */
+export async function saveChatMessage(
+  userId: string,
+  role: 'user' | 'assistant',
+  content: string,
+  context?: string
+): Promise<ChatDocument> {
+  const chat = await ChatModel.findOneAndUpdate(
+    { userId },
+    {
+      $push: { messages: { role, content, timestamp: new Date() } },
+      $set: { context },
+    },
+    { upsert: true, new: true }
+  );
+  return chat;
+}
 
-    const existingChat = await Chat.findById(id);
-    if (existingChat) {
-        return Chat.findByIdAndUpdate(id, { messages }, { new: true });
-    }
-
-    return new Chat({ _id: id, messages, userId }).save();
+/**
+ * Retrieve chat history for a user.
+ */
+export async function getChatHistory(userId: string): Promise<ChatDocument | null> {
+  return ChatModel.findOne({ userId }).exec();
 }
 
 // ✅ Delete Chat by ID
 export async function deleteChatById(id: string) {
     await connectDB();
-    return Chat.findByIdAndDelete(id).exec();
+    return ChatModel.findByIdAndDelete(id).exec();
 }
 
-// ✅ Get Chats by User ID
-export async function getChatsByUserId(userId: string) {
-    await connectDB();
-    return Chat.find({ userId }).sort({ createdAt: -1 }).exec();
-}
 
 // ✅ Get Chat by ID
 export async function getChatById(id: string) {
     await connectDB();
-    return Chat.findById(id).exec();
+    return ChatModel.findById(id).exec();
 }
 
 // ✅ Create Reservation
