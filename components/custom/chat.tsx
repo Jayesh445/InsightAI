@@ -1,7 +1,7 @@
 "use client";
 
 import { Attachment, Message } from "ai";
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
 import { useState } from "react";
 
 import { Message as PreviewMessage } from "@/components/custom/message";
