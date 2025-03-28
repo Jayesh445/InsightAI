@@ -9,13 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PaperclipIcon, SendIcon, XIcon, BrainCircuitIcon } from "lucide-react";
+import { PaperclipIcon, SendIcon, XIcon, BrainCircuitIcon, VideoIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function Chat() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat();
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setInput, append } = useChat();
 
   const [files, setFiles] = useState<FileList | undefined>(undefined);
+  const [videoProcessing, setVideoProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -34,8 +35,67 @@ export default function Chat() {
     }
   };
 
+  const handleVideoProcessing = async () => {
+    if (!files) return;
+    
+    // Find the first video file
+    const videoFile = Array.from(files).find(file => file.type.startsWith('video/'));
+    
+    if (!videoFile) {
+      alert("No video files selected. Please upload a video file.");
+      return;
+    }
+    
+    try {
+      setVideoProcessing(true);
+      
+      // Create a temporary object URL for the video file
+      const videoUrl = URL.createObjectURL(videoFile);
+      
+      // Get user prompt if provided, otherwise use default
+      const userPrompt = input.trim() || "Provide a comprehensive summary of this video";
+      
+      // Add the user's prompt and video URL as a message
+      // The format enables the AI to recognize and use the video_processing tool
+      await append({
+        role: 'user',
+        content: `${userPrompt}\n\nVideo URL: ${videoUrl}`,
+      });
+      
+      // Clear the input and files
+      setInput("");
+      setFiles(undefined);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      // Scroll to bottom
+      setTimeout(() => {
+        scrollAreaRef.current?.scrollTo({ top: 999999, behavior: 'smooth' });
+      }, 100);
+      
+      // Note: We don't need to manually append the AI response 
+      // as it will come through the normal chat interface
+    } catch (error) {
+      console.error("Video processing error:", error);
+      alert("Error processing video: " + (error instanceof Error ? error.message : "Unknown error"));
+    } finally {
+      setVideoProcessing(false);
+    }
+  };
+
+  // Check if any files are videos
+  const hasVideoFiles = files ? Array.from(files).some(file => file.type.startsWith('video/')) : false;
+
   return (
     <div className="flex flex-col w-full max-w-3xl min-h-[85vh] h-full p-4 mx-auto">
+      <div className="text-center mb-4">
+        <h1 className="text-3xl font-bold tracking-tight">InsightAI Chatbot</h1>
+        <p className="text-muted-foreground mt-1">
+          Powerful AI assistant with web searching and video analyzing capability
+        </p>
+      </div>
+      
       <Card className="flex-1 overflow-hidden border shadow-sm">
         <ScrollArea 
           ref={scrollAreaRef}
@@ -173,7 +233,12 @@ export default function Chat() {
             {files && files.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
                 {Array.from(files).map((file, i) => (
-                  <Badge key={i} variant="secondary" className="pl-2 pr-1 py-1 gap-1 items-center">
+                  <Badge 
+                    key={i} 
+                    variant="secondary" 
+                    className={`pl-2 pr-1 py-1 gap-1 items-center ${file.type.startsWith('video/') ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
+                  >
+                    {file.type.startsWith('video/') && <VideoIcon className="h-3 w-3 mr-1" />}
                     {file.name.length > 20 ? `${file.name.substring(0, 17)}...` : file.name}
                     <Button 
                       type="button" 
@@ -187,6 +252,29 @@ export default function Chat() {
                   </Badge>
                 ))}
               </div>
+            )}
+
+            {/* Video processing button */}
+            {hasVideoFiles && (
+              <Button
+                type="button"
+                variant="outline"
+                className="mb-2"
+                onClick={handleVideoProcessing}
+                disabled={videoProcessing || isLoading}
+              >
+                {videoProcessing ? (
+                  <>
+                    <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-primary rounded-full"></div>
+                    Processing video...
+                  </>
+                ) : (
+                  <>
+                    <VideoIcon className="h-4 w-4 mr-2" />
+                    Analyze Video with AI
+                  </>
+                )}
+              </Button>
             )}
 
             <div className="flex items-center gap-2">
@@ -210,22 +298,22 @@ export default function Chat() {
                 }}
                 multiple
                 ref={fileInputRef}
-                accept="image/*,.pdf,.doc,.docx,.txt"
+                accept="image/*,video/*,.pdf,.doc,.docx,.txt"
               />
               
               <div className="flex-1 relative">
                 <Input
                   className="pr-12 py-5 h-10"
                   value={input}
-                  placeholder="Type a message..."
+                  placeholder={hasVideoFiles ? "Enter prompt for video analysis or type a message..." : "Type a message..."}
                   onChange={handleInputChange}
-                  disabled={isLoading}
+                  disabled={isLoading || videoProcessing}
                 />
                 <Button 
                   type="submit" 
                   size="icon" 
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full"
-                  disabled={!input && (!files || files.length === 0) || isLoading}
+                  disabled={!input && (!files || files.length === 0) || isLoading || videoProcessing}
                 >
                   <SendIcon className="h-4 w-4" />
                 </Button>
