@@ -33,17 +33,6 @@ def process_images_in_batches(image_list,transcription, batch_size=4):
                 - Avoid technical terms (like frames or images); focus solely on the events, actions, and context.
                 - Keep the narrative natural and engaging, as if explaining a scene to someone who hasn’t seen the video.
 
-                **Example Response:**
-
-                **Previous Frame Data:** 
-                A woman stands in her kitchen, chopping vegetables while the sound of a boiling kettle fills the background. She hums along to a song playing on the radio.
-
-                **Transcription:**
-                The audio transcription mentions, "The kettle’s almost done. I can’t wait for the tea."
-
-                **Current Frame Description:**
-                The woman is now seated at the kitchen table, sipping a cup of tea. Her face lights up as she looks out the window, watching the rain pour down. The kettle from earlier is now off, and the cup she holds in her hand steams lightly. The scene feels peaceful, contrasting with the earlier rush in her movements. The background music continues, faintly heard in the background.
-
                 """,
                 'images': batch_images
             }]

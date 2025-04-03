@@ -27,6 +27,8 @@ def upload_video():
     audio_path = "static/audio/output.wav"
     transcription = transcribe_audio(audio_path)
 
+    print("Transcription    "+transcription)
+
     get_frames(video_path)
     frame_data = process_frames(video_path,transcription)
 
