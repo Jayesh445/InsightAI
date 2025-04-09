@@ -1,26 +1,8 @@
 import json
 from config.settings import supabase, embedding_model
 import numpy as np
+from modules.data_chunk import chunk_text
 # text_utils.py
-
-def chunk_text(text, max_chunk_size=500):
-    """
-    Splits text into chunks of a specified maximum size while preserving sentence boundaries.
-    """
-    if not isinstance(text, str) or not text.strip():
-        raise ValueError("Invalid text input: Must be a non-empty string")
-
-    chunks = []
-    while len(text) > max_chunk_size:
-        split_point = text.rfind(". ", 0, max_chunk_size)
-        if split_point == -1:
-            split_point = max_chunk_size  # Force split if no good sentence break is found
-        chunks.append(text[:split_point + 1].strip())
-        text = text[split_point + 1:].strip()
-
-    chunks.append(text.strip())  # Add remaining text
-    return chunks
-
 
 def store_summary(video_filename, summary):
     """Store summary with embeddings in Supabase."""
@@ -54,7 +36,7 @@ def store_knowledge(video_filename, transcription, frame_data, summary):
     store_summary(video_filename, summary)
 
 # 🔹 Retrieve Most Relevant Chunks (Efficient Querying)
-def fetch_relevant_chunks(video_filename, question, top_n=2):
+def fetch_relevant_chunks(video_filename, question, top_n=5):
     """
     Fetches the most relevant text chunks from audio & frame data using vector similarity.
     """
